@@ -31,7 +31,7 @@ pipeline {
             steps {
                 script {
                     // Using DockerHub credentials to authenticate and push the image
-                    withDockerRegistry([credentialsId: 'bharani_dockerhub_cred']) {
+                    withDockerRegistry([credentialsId: 'docker']) {
                         // Docker build, tag, and push steps
                         sh """
                             docker build -t ${IMAGE_NAME} .
