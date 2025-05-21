@@ -2,27 +2,27 @@ pipeline {
     agent any
 
     tools {
-        jdk 'jdk21' // Ensure JDK 21 is set up in Jenkins tools
+        jdk 'jdk21'
     }
 
     environment {
-        IMAGE_NAME = 'bharani2121/e-commerce-devops-project' // Docker image name
-        TAG = 'latest' // Docker image tag
+        IMAGE_NAME = 'bharani2121/e-commerce-devops-project'
+        TAG = 'latest'
+        PORT = '8090' // Changed to avoid conflict with Jenkins
     }
 
     stages {
         stage('Clean Workspace') {
             steps {
                 echo "Cleaning workspace..."
-                deleteDir()  // Clean workspace before starting the build
+                deleteDir()
             }
         }
 
         stage('Git Checkout') {
             steps {
-                // Clone the repository from GitHub
                 git branch: 'main',
-                    credentialsId: 'bharani_github_cred',  // Add your GitHub credentials here
+                    credentialsId: 'bharani_github_cred',
                     url: 'https://github.com/bharani2121/DEVOPS_PROJECT_DEPLOY.git'
             }
         }
@@ -30,15 +30,31 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 script {
-                    // Using DockerHub credentials to authenticate and push the image
                     withDockerRegistry([credentialsId: 'dockerhub-credentials']) {
-                        // Docker build, tag, and push steps
                         sh """
                             docker build -t ${IMAGE_NAME} .
                             docker tag ${IMAGE_NAME} ${IMAGE_NAME}:${TAG}
                             docker push ${IMAGE_NAME}:${TAG}
                         """
                     }
+                }
+            }
+        }
+
+        stage('Run Docker Container Locally') {
+            steps {
+                script {
+                    sh """
+                        docker stop devops_html_container || true
+                        docker rm devops_html_container || true
+                    """
+
+                    dockerRunCmd = """
+                        docker run -d -p ${PORT}:80 --name devops_html_container ${IMAGE_NAME}:${TAG}
+                    """
+                    sh dockerRunCmd
+
+                    echo "Your HTML app is running at: http://localhost:${PORT}"
                 }
             }
         }
